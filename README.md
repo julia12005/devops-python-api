@@ -217,7 +217,7 @@ Recursos da AWS:
 
 ```bash
 curl http://<IP-PUBLICO-DA-EC2>:8000/health
-# {"status":"ok","version":"1.0.0"}
+# {"status":"ok","version":"2.0.0"}
 ```
 
 A versão vem de `version` em `app/main.py`. Para confirmar a imagem em execução, o SHA do commit aparece na tag da imagem no ECR e na saída de `docker ps` na EC2.
