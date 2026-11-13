@@ -211,7 +211,9 @@ Recursos da AWS:
 
 ### URL da API publicada
 
-`http://<IP-PUBLICO-DA-EC2>:8000` (preencher com o endereço da instância)
+`http://3.91.79.99:8000` (health check: `http://3.91.79.99:8000/health`)
+
+O endereço corresponde à instância EC2 usada na avaliação e deixa de responder quando os recursos da AWS são encerrados.
 
 ### Como verificar a versão implantada
 
@@ -224,15 +226,15 @@ A versão vem de `version` em `app/main.py`. Para confirmar a imagem em execuç�
 
 ### Evidências da execução
 
-Preencher com as capturas de tela (pasta `docs/evidencias/`) e os links:
+Capturas de tela na pasta `docs/evidencias/` (quando adicionadas) e links:
 
-- Execução do CI bem-sucedida: _link/captura_
-- Imagem e tag no Amazon ECR: _captura_
-- Pipeline de deploy bem-sucedida: _link/captura_
-- Contêiner em execução na EC2 (`docker ps`): _captura_
-- API acessível pelo navegador: _captura_
-- Segundo deploy automático (nova versão): _captura_
-- Pull Requests: _links_
+- Pull Request 1 (pipeline CI/CD, versão 1.0.0): <https://github.com/julia12005/devops-python-api/pull/1>
+- Pull Request 2 (atualização para a versão 2.0.0): <https://github.com/julia12005/devops-python-api/pull/2>
+- Execuções do CI e do deploy (ambas com sucesso): <https://github.com/julia12005/devops-python-api/actions>
+- Primeiro deploy (versão 1.0.0): <https://github.com/julia12005/devops-python-api/actions/runs/43338793063>
+- Segundo deploy automático (versão 2.0.0): <https://github.com/julia12005/devops-python-api/actions/runs/43343125001>
+- Imagens no Amazon ECR: uma tag por commit (SHA), uma para cada versão implantada.
+- Contêiner em execução na EC2: `docker ps` e `curl http://localhost:8000/health`, que passou de `"version":"1.0.0"` para `"version":"2.0.0"` sem nenhum comando manual de deploy.
 
 ## Falhas intencionais para demonstrar
 
