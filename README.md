@@ -20,7 +20,9 @@ O projeto utiliza FastAPI, pytest, Ruff, GitHub Actions e Docker. Os dados ficam
 
 ```text
 .
-├── .github/workflows/ci.yml   # pipeline de integração contínua
+├── .github/workflows/
+│   ├── ci.yml                 # pipeline de integração contínua (Pull Requests)
+│   └── deploy.yml             # pipeline de entrega contínua (ECR + EC2)
 ├── app/
 │   ├── __init__.py
 │   └── main.py                # API FastAPI
@@ -156,6 +158,81 @@ docker compose down
 ```
 
 Veja a leitura detalhada do Dockerfile em [docs/DOCKER.md](docs/DOCKER.md).
+
+## 6. Entrega contínua: GitHub Actions, Amazon ECR e EC2
+
+### Arquitetura de implantação
+
+```text
+Desenvolvedor ──► Pull Request ──► CI (ci.yml): ruff + pytest + teste do container
+                                      │ merge na main
+                                      ▼
+                         deploy.yml (GitHub Actions)
+                 testes ─► build Docker ─► push no Amazon ECR (tag = SHA do commit)
+                                      │
+                                      ▼ SSH
+                  EC2 (Amazon Linux + Docker, IAM Role com leitura do ECR)
+              login no ECR ─► docker pull ─► substitui o contêiner ─► verifica /health
+```
+
+### Pipeline de integração contínua (`ci.yml`)
+
+Executada em `pull_request` para a `main`: baixa o código, configura o Python, instala as dependências, roda `ruff` e `pytest` (com cobertura) e, se tudo passar, constrói a imagem e testa o endpoint `/health` no contêiner. Se os testes falharem, o PR não deve ser integrado.
+
+### Pipeline de entrega contínua (`deploy.yml`)
+
+Executada em `push` na `main` (ou seja, após o merge de um Pull Request). Possui três jobs encadeados com `needs`, então **nenhuma etapa de entrega roda se os testes falharem**:
+
+1. `test`: instala as dependências, roda `ruff` e `pytest`.
+2. `build-and-push`: autentica na AWS, faz login no ECR, constrói a imagem e a publica com a tag igual ao SHA do commit (`github.sha`).
+3. `deploy`: conecta na EC2 via SSH, autentica o Docker da instância no ECR, baixa a imagem do commit, remove o contêiner anterior, inicia o novo e verifica o `/health`.
+
+Nenhum comando precisa ser executado manualmente na EC2.
+
+### Configuração necessária (sem credenciais no repositório)
+
+Em **Settings → Secrets and variables → Actions**, cadastre:
+
+| Secret | Descrição |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | Chave de acesso da AWS |
+| `AWS_SECRET_ACCESS_KEY` | Chave secreta da AWS |
+| `AWS_SESSION_TOKEN` | Token de sessão (necessário no AWS Academy Learner Lab) |
+| `EC2_HOST` | IP público ou DNS da instância EC2 |
+| `EC2_USER` | Usuário SSH (`ec2-user` no Amazon Linux) |
+| `EC2_SSH_KEY` | Conteúdo da chave privada `.pem` usada no par de chaves da EC2 |
+
+Região (`us-east-1`), repositório ECR (`devops-python-api`) e porta (`8000`) ficam na seção `env` do `deploy.yml`.
+
+Recursos da AWS:
+
+- **ECR:** repositório privado `devops-python-api`.
+- **EC2:** Amazon Linux 2023 com Docker instalado, perfil de instância IAM (IAM Role) com permissão de leitura no ECR e Security Group liberando a porta 22 (SSH) e a porta 8000 (API).
+
+### URL da API publicada
+
+`http://<IP-PUBLICO-DA-EC2>:8000` (preencher com o endereço da instância)
+
+### Como verificar a versão implantada
+
+```bash
+curl http://<IP-PUBLICO-DA-EC2>:8000/health
+# {"status":"ok","version":"1.0.0"}
+```
+
+A versão vem de `version` em `app/main.py`. Para confirmar a imagem em execução, o SHA do commit aparece na tag da imagem no ECR e na saída de `docker ps` na EC2.
+
+### Evidências da execução
+
+Preencher com as capturas de tela (pasta `docs/evidencias/`) e os links:
+
+- Execução do CI bem-sucedida: _link/captura_
+- Imagem e tag no Amazon ECR: _captura_
+- Pipeline de deploy bem-sucedida: _link/captura_
+- Contêiner em execução na EC2 (`docker ps`): _captura_
+- API acessível pelo navegador: _captura_
+- Segundo deploy automático (nova versão): _captura_
+- Pull Requests: _links_
 
 ## Falhas intencionais para demonstrar
 
