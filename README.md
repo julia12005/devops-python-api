@@ -211,9 +211,11 @@ Recursos da AWS:
 
 ### URL da API publicada
 
-`http://3.91.79.99:8000` (health check: `http://3.91.79.99:8000/health`)
+`http://54.226.107.171:8000` (health check: `http://54.226.107.171:8000/health`)
 
 O endereço corresponde à instância EC2 usada na avaliação e deixa de responder quando os recursos da AWS são encerrados.
+
+> **Nota sobre o endereço IP:** as capturas de tela do primeiro deploy (versão 1.0.0) mostram o IP `3.91.79.99`. Essa é a mesma instância EC2 (`i-043a09568c3db9d6b`). O ambiente AWS Academy Learner Lab interrompe a instância ao encerrar a sessão e, ao religá-la, o IP público muda para `54.226.107.171`, que é o endereço atual e o mostrado nas capturas mais recentes. Nenhuma outra instância foi utilizada, e o contêiner voltou a executar sozinho (`--restart unless-stopped`).
 
 ### Como verificar a versão implantada
 
@@ -226,21 +228,54 @@ A versão vem de `version` em `app/main.py`. Para confirmar a imagem em execuç�
 
 ### Evidências da execução
 
-Capturas de tela na pasta `docs/evidencias/` (quando adicionadas) e links:
+Capturas de tela na pasta [docs/evidencias/](docs/evidencias/) e links:
 
 - Pull Request 1 (pipeline CI/CD, versão 1.0.0): <https://github.com/julia12005/devops-python-api/pull/1>
 - Pull Request 2 (atualização para a versão 2.0.0): <https://github.com/julia12005/devops-python-api/pull/2>
+- Pull Request 3 (documentação e evidências no README): <https://github.com/julia12005/devops-python-api/pull/3>
 - Execuções do CI e do deploy (ambas com sucesso): <https://github.com/julia12005/devops-python-api/actions>
 - Primeiro deploy (versão 1.0.0): <https://github.com/julia12005/devops-python-api/actions/runs/43338793063>
 - Segundo deploy automático (versão 2.0.0): <https://github.com/julia12005/devops-python-api/actions/runs/43343125001>
 - Imagens no Amazon ECR: uma tag por commit (SHA), uma para cada versão implantada.
 - Contêiner em execução na EC2: `docker ps` e `curl http://localhost:8000/health`, que passou de `"version":"1.0.0"` para `"version":"2.0.0"` sem nenhum comando manual de deploy.
 
+#### Relação entre versões, commits e imagens no ECR
+
+| Versão da API | Commit (tag da imagem no ECR) | Origem |
+|---|---|---|
+| 1.0.0 | `2d524cbbd6325b19aac31fa85dc3c5c39cfbe943` | Merge do PR 1 |
+| 2.0.0 | `5ec4b6e2c0b6e27fe19760f458de76d1d97be8f0` | Merge do PR 2 (segundo deploy automático) |
+| 2.0.0 | `9951800f4dbcb57bb6d313c7ae9b6384917215f6` | Merge do PR 3 (apenas documentação) |
+
+#### Integração contínua
+
+![CI do Pull Request 1 com sucesso](docs/evidencias/01-ci-pr1-sucesso.jpeg)
+![Log do pytest no GitHub Actions](docs/evidencias/02-ci-pytest-log.jpeg)
+![Pull Request 1 mergeado](docs/evidencias/03-pr1-merged.jpeg)
+
+#### Publicação no Amazon ECR
+
+![Imagens no ECR com tag por commit](docs/evidencias/04-ecr-imagens.png)
+
+#### Primeiro deploy (versão 1.0.0)
+
+![Pipeline de deploy com sucesso](docs/evidencias/05-deploy-pipeline-v1.jpeg)
+![Job de deploy na EC2 via SSH](docs/evidencias/05b-deploy-job-ssh-ec2.jpeg)
+![Contêiner em execução na EC2](docs/evidencias/06-ec2-docker-ps-v1.jpeg)
+
+#### Segundo deploy automático (versão 2.0.0)
+
+![Pull Request 2 com CI e merge](docs/evidencias/08-pr2-ci-merge.png)
+![Checks do Pull Request 2](docs/evidencias/08b-pr2-checks.png)
+![Pipeline de deploy do segundo PR](docs/evidencias/09-deploy-pipeline-v2.jpeg)
+![Contêiner atualizado na EC2](docs/evidencias/10-ec2-docker-ps-v2.jpeg)
+![API acessível pelo navegador](docs/evidencias/11-navegador-v2.png)
+
 ## Falhas intencionais para demonstrar
 
 ### Falha de teste
 
-Em `app/main.py`, altere temporariamente a versão do health check para `2.0.0`. O teste espera `1.0.0`, então o pytest e o pipeline devem falhar.
+Em `app/main.py`, altere temporariamente a versão do health check para `3.0.0`. O teste espera `2.0.0`, então o pytest e o pipeline devem falhar.
 
 ### Falha de qualidade
 
